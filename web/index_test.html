@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <!-- 引入组件库 -->
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+    <script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.0.0-rc.1/jsencrypt.min.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <el-row :gutter="6">
+          <el-col :span="6">
+              <el-image ref="img"
+                        style="width: 135px; height: 40px"
+                        :src="url"
+                        :fit="contain">
+              </el-image>
+          </el-col>
+          <el-col :span="6">
+            <el-button @click='onGetCaptcha' type="primary" size='small'>获取验证码
+            </el-button>
+          </el-col>
+      </el-row>
+      <br>
+      <el-row :gutter="6">
+          <el-col :span="6">
+            <el-input v-model="inputCaptcha"  size="small" placeholder="请输入验证码"></el-input>
+          </el-col>
+          <el-col :span="6">
+            <el-button @click='onVerifyCaptcha' type="primary" size='small'>验证验证码
+            </el-button>
+          </el-col>
+      </el-row>
+      <br>
+      <el-row :gutter="6">
+          <el-col :span="6">
+            <el-input v-model="inputName" size="small" placeholder="用户名"></el-input>
+          </el-col>
+          <el-col :span="6">
+            <el-input v-model="inputPasswd" size="small" placeholder="密码"></el-input>
+          </el-col>
+      </el-row>
+      <br>
+      <el-row :gutter="6">
+          <el-col :span="3">
+            <el-button @click='onLogin' type="primary" size='small'>登录
+            </el-button>
+          </el-col>
+          <el-col :span="3">
+            <el-button @click='onLogout' type="primary" size='small'>注销
+            </el-button>
+          </el-col>
+          <el-col :span="6">
+            <el-input v-model="userid" size="small" placeholder="用户id"></el-input>
+          </el-col>
+      </el-row>
+      <br>
+      <el-divider content-position="center">接口测试</el-divider>
+      <el-row :gutter="6">
+          <el-col :span="6">
+              <el-select v-model="net_method" size="small" type="primary" placeholder="方法">
+                  <el-option
+                          v-for="item in methods"
+                          :key="item.value"
+                          :label="item.label"
+                          :value="item.value">
+                  </el-option>
+              </el-select>
+          </el-col>
+          <el-col :span="6">
+            <el-input v-model="net_url"  size="small" placeholder="url"></el-input>
+          </el-col>
+          <el-col :span="6">
+            <el-button @click='onTest'  type="primary" size='small'>测试
+            </el-button>
+          </el-col>
+      </el-row>
+      <br>
+      <el-row :gutter="6">
+          <el-col :span="12">
+            <el-input
+                    type="textarea"
+                    :autosize="{ minRows: 6, maxRows: 20}"
+                    placeholder="请输入请求内容"
+                    v-model="net_request">
+            </el-input>
+          </el-col>
+          <el-col :span="12">
+            <el-row :gutter="6">
+              <span size= "small" >响应结果： </span>
+            </el-row>
+            <el-row :gutter="6">
+              <pre class="net_response" v-html="net_response">{{ net_response  }}</pre>
+            </el-row>
+          </el-col>
+      </el-row>
+    </div>
+  </body>
+
+  <script type = "text/javascript">
+    var vm = new Vue({
+      el:'#app',
+      data:{
+        msg:'Hello World!',
+        url:'',
+        idkey:"",
+        inputCaptcha:"",
+        captcha_code:"",
+        encode_key:"",
+        inputName:"",
+        inputPasswd:"",
+        userid:"",
+        token:"",
+        net_method:"GET",
+        methods:[
+            {   value: 'GET' },
+            {   value: 'POST' },
+            {   value: 'PUT' },
+            {   value: 'DELETE' },
+        ],
+        net_url:"",
+        net_request:"",
+        net_response:""
+      },
+      mounted: function () {
+        //GetCaptcha();
+        //GetPublicKey()
+      },
+      methods:{
+        onGetCaptcha(){
+          GetCaptcha()
+        },
+        onVerifyCaptcha(){
+          VerifyCaptcha()
+        },
+        onLogin(){
+          DoLogin()
+        },
+        onLogout(){
+          DoLogout()
+        },
+        onTest(){
+          DoTest()
+        }
+      }
+    });
+
+    function DoTest(){
+      const method = vm.net_method;
+      const c = "?";
+        let route = vm.net_url;
+        if (method !== "POST") {
+          if (vm.net_url.indexOf(c) !== -1){
+              route +=  "&"+Math.random();
+          } else {
+              route += "?"+Math.random();
+          }
+      }
+
+      const sendContent = vm.net_request;
+      if (method === "POST" && sendContent.size < 0) {
+        alert("请求内容不能为空")
+        return
+      }
+      const xhr = new XMLHttpRequest();
+      xhr.open(method, route, true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.setRequestHeader('Authorization', 'Bearer ' + vm.token);
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+          const result = xhr.responseText;
+          if (isJsonString(result)) {
+            const json = JSON.parse(result);
+            vm.net_response = new JSONFormat(JSON.stringify(json), 4).toString()
+          } else {
+            alert(result);
+          }
+        } else {
+          console.log(e)
+        }
+      };
+      xhr.ontimeout = function (e) {
+        console.log(e)
+      };
+
+      xhr.onerror = function (e) {
+        console.log(e)
+      };
+
+      if (sendContent.length > 0) {
+          const content = JSON.stringify(JSON.parse(sendContent));
+          console.log(content)
+          xhr.send(content);
+      } else {
+          xhr.send();
+      }
+    }
+
+    function DoLogout() {
+      const xhr = new XMLHttpRequest();
+      const route = 'logout/' + vm.userid;
+      xhr.open('GET', route, true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.setRequestHeader('Authorization', 'Bearer ' + vm.token);
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          const result = xhr.responseText;
+          alert(result);
+        } else {
+          self.errorInfo = "Network or auth server not work.";
+        }
+      };
+      xhr.ontimeout = function (e) {
+        self.errorInfo = "Request timed out.";5647
+      };
+
+      xhr.onerror = function (e) {
+        self.errorInfo = "Network or auth server not work.";
+      };
+
+      xhr.send();
+    }
+
+    function DoLogin() {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/login', true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          const result = xhr.responseText;
+          const  obj = JSON.parse(result);
+          if (obj.code == 0 ){
+             vm.token = obj.token;
+             vm.userid = obj.id;
+          }
+        } else {
+          self.errorInfo = "Network or auth server not work.";
+        }
+      };
+      xhr.ontimeout = function (e) {
+        self.errorInfo = "Request timed out.";
+      };
+
+      xhr.onerror = function (e) {
+        self.errorInfo = "Network or auth server not work.";
+      };
+
+      const body = {
+        "username": vm.inputName,
+        "password": DoEncryption(vm.inputPasswd),
+        "captcha_code": vm.captcha_code
+      };
+      xhr.send(JSON.stringify(body));
+    }
+
+    function DoEncryption (text) {
+      // Encrypt with the public key...
+      const crypt = new JSEncrypt();
+      crypt.setKey(vm.encode_key);
+      const enc = crypt.encrypt(text);
+      return enc
+    }
+
+    function VerifyCaptcha() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/captcha', true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          const result = xhr.responseText;
+          const obj = JSON.parse(result);
+          vm.captcha_code = obj.captcha_code;
+        } else {
+          self.errorInfo = "Network or auth server not work.";
+        }
+      };
+      xhr.ontimeout = function (e) {
+        self.errorInfo = "Request timed out.";5647
+      };
+
+      xhr.onerror = function (e) {
+        self.errorInfo = "Network or auth server not work.";
+      };
+
+      var body = {
+        "idkey": vm.idkey,
+        "verify": vm.inputCaptcha
+      };
+      xhr.send(JSON.stringify(body));
+    }
+
+    function GetPublicKey() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/private', true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          const result = xhr.responseText;
+          console.log(result);
+          const obj = JSON.parse(result);
+          console.log(obj.public_key)
+          vm.encode_key = window.atob(obj.public_key);
+          console.log(vm.encode_key)
+        } else {
+          self.errorInfo = "Network or auth server not work.";
+        }
+      };
+      xhr.ontimeout = function (e) {
+        self.errorInfo = "Request timed out.";
+      };
+
+      xhr.onerror = function (e) {
+        self.errorInfo = "Network or auth server not work.";
+      };
+
+      xhr.send();
+    }
+
+    function GetCaptcha() {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/captcha', true);
+      xhr.setRequestHeader("Content-type", "application/json;charset=utf-8");
+      xhr.timeout = 5000; //5s
+      xhr.onload = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+          const result = xhr.responseText;
+          const obj = JSON.parse(result);
+          console.log(obj);
+          console.log(obj.code);
+          console.log(obj.message);
+          console.log(obj.idkey);
+          console.log(obj.captcha);
+          //alert(result);
+          vm.url = obj.captcha;
+          vm.idkey = obj.idkey;
+          console.log(this.url);
+        } else {
+          self.errorInfo = "Network or auth server not work.";
+        }
+      };
+      xhr.ontimeout = function (e) {
+        self.errorInfo = "Request timed out.";
+      };
+
+      xhr.onerror = function (e) {
+        self.errorInfo = "Network or auth server not work.";
+      };
+
+      xhr.send();
+    }
+
+    function isJsonString(str) {
+      try {
+        if (typeof JSON.parse(str) == "object") {
+          return true;
+        }
+      } catch (e) {
+      }
+      return false;
+    }
+
+    //json格式化方法   参数1：json对象，参数2：缩进字符数
+    var JSONFormat = (function () {
+      var _toString = Object.prototype.toString;
+
+      function format(object, indent_count) {
+        var html_fragment = '';
+        switch (_typeof(object)) {
+          case 'Null' :
+            0
+            html_fragment = _format_null(object);
+            break;
+          case 'Boolean' :
+            html_fragment = _format_boolean(object);
+            break;
+          case 'Number' :
+            html_fragment = _format_number(object);
+            break;
+          case 'String' :
+            html_fragment = _format_string(object);
+            break;
+          case 'Array' :
+            html_fragment = _format_array(object, indent_count);
+            break;
+          case 'Object' :
+            html_fragment = _format_object(object, indent_count);
+            break;
+        }
+        return html_fragment;
+      };
+
+      function _format_null(object) {
+        return '<span class="json_null">null</span>';
+      }
+
+      function _format_boolean(object) {
+        return '<span class="json_boolean">' + object + '</span>';
+      }
+
+      function _format_number(object) {
+        return '<span class="json_number">' + object + '</span>';
+      }
+
+      function _format_string(object) {
+        object = object.replace(/\</g, "<");
+        object = object.replace(/\>/g, ">");
+        if (0 <= object.search(/^http/)) {
+          object = '<a href="' + object + '" target="_blank" class="json_link">' + object + '</a>'
+        }
+        return '<span class="json_string">"' + object + '"</span>';
+      }
+
+      function _format_array(object, indent_count) {
+        var tmp_array = [];
+        for (var i = 0, size = object.length; i < size; ++i) {
+          tmp_array.push(indent_tab(indent_count) + format(object[i], indent_count + 1));
+        }
+        return '<span data-type="array" data-size="' + tmp_array.length + '"><i  style="cursor:pointer;" class="fa fa-minus-square-o" onclick="hide(this)"></i>[<br/>'
+                + tmp_array.join(',<br/>')
+                + '<br/>' + indent_tab(indent_count - 1) + ']</span>';
+      }
+
+      function _format_object(object, indent_count) {
+        var tmp_array = [];
+        for (var key in object) {
+          tmp_array.push(indent_tab(indent_count) + '<span class="json_key">"' + key + '"</span>:' + format(object[key], indent_count + 1));
+        }
+        return '<span  data-type="object"><i  style="cursor:pointer;" class="fa fa-minus-square-o" onclick="hide(this)"></i>{ <br/>'
+                + tmp_array.join(',<br/>')
+                  + '<br/>' + indent_tab(indent_count - 1) + '}</span>';
+      }
+
+      function indent_tab(indent_count) {
+        return (new Array(indent_count + 1)).join('    ');
+      }
+
+      function _typeof(object) {
+        var tf = typeof object,
+                ts = _toString.call(object);
+        return null === object ? 'Null' :
+                'undefined' == tf ? 'Undefined' :
+                        'boolean' == tf ? 'Boolean' :
+                                'number' == tf ? 'Number' :
+                                        'string' == tf ? 'String' :
+                                                '[object Function]' == ts ? 'Function' :
+                                                        '[object Array]' == ts ? 'Array' :
+                                                                '[object Date]' == ts ? 'Date' : 'Object';
+      };
+
+      function loadCssString() {
+        var style = document.createElement('style');
+        style.type = 'text/css';
+        var code = Array.prototype.slice.apply(arguments).join('');
+        try {
+          style.appendChild(document.createTextNode(code));
+        } catch (ex) {
+          style.styleSheet.cssText = code;
+        }
+        document.getElementsByTagName('head')[0].appendChild(style);
+      }
+
+      loadCssString(
+              '.json_key{ color: #92278f;font-weight:bold;}',
+              '.json_null{color: #f1592a;font-weight:bold;}',
+              '.json_string{ color: #3ab54a;font-weight:bold;}',
+              '.json_number{ color: #25aae2;font-weight:bold;}',
+              '.json_link{ color: #717171;font-weight:bold;}',
+              '.json_array_brackets{}');
+
+      var _JSONFormat = function (origin_data) {
+        this.data = JSON.parse(origin_data);
+      };
+
+      _JSONFormat.prototype = {
+        constructor: JSONFormat,
+        toString: function () {
+          return format(this.data, 1);
+        }
+      }
+
+      return _JSONFormat;
+    })();
+  </script>
+</html>

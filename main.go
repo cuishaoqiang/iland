@@ -4,8 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"iland/log"
 	"io/ioutil"
 )
+
+type ListenAddr struct {
+	IP string `json:"ip"`
+	Port string `json:"port"`
+}
 
 func main() {
 	app := iris.New()
@@ -25,12 +31,17 @@ func main() {
 		_ = ctx.View("index_test.html")
 	})
 
-	_ = app.Run(iris.Addr(listenAddr))
+
+	listenAddr, err := getListenAddr()
+	if err != nil {
+		fmt.Println("## get listen address failed")
+	}
+	_ = app.Run(iris.Addr(fmt.Sprintf("%s:%s", listenAddr.IP, listenAddr.Port)))
 
 }
 
-func getListenAddr() (string, string, error) {
-	config, err := ioutil.ReadFile("./config/listen_addr.json")
+func getListenAddr() (ListenAddr, error) {
+	config, err := ioutil.ReadFile("./config/listenaddr.json")
 	if err != nil {
 		fmt.Println(err.Error())
 	}
@@ -41,5 +52,5 @@ func getListenAddr() (string, string, error) {
 		fmt.Println(jsonErr.Error())
 	}
 
-	return addr.Ip, addr.Port, nil
+	return addr, nil
 }
