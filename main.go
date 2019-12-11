@@ -4,7 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/context"
+	"iland/auth"
+	"iland/captcha"
 	"iland/log"
+	"iland/login"
 	"io/ioutil"
 )
 
@@ -31,6 +35,23 @@ func main() {
 		_ = ctx.View("index_test.html")
 	})
 
+	lCaptcha := app.Party("/captcha")
+	{
+		lCaptcha.Get("/", captcha.Get)
+		lCaptcha.Post("/", captcha.Check)
+	}
+
+	app.Post("/login", login.Login)
+
+	app.Post("/logout", func(c context.Context) {
+
+	})
+
+	lUser := app.Party("/user", auth.CheckToken)
+	{
+		lUser.Post("/register", func(context context.Context) {})
+		lUser.Post("/list", func(context context.Context) {})
+	}
 
 	listenAddr, err := getListenAddr()
 	if err != nil {
