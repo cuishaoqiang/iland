@@ -48,7 +48,7 @@ func Check(ctx iris.Context) {
 		return
 	}
 
-	if VerifyCaptcha(req.IDKey, req.Verify) {
+	if !VerifyCaptcha(req.IDKey, req.Verify) {
 		res.Code = 1
 		res.Message = "验证码错误"
 		_, _ = ctx.JSON(res)
