@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris/v12"
 	"iland/auth"
 	"iland/common"
+	"iland/user"
 )
 
 type LoginReq struct {
@@ -28,9 +29,35 @@ func Login(ctx iris.Context){
 		return
 	}
 
-	// TODO 检查密码
+	// 检查验证码
+	if req.CaptchaCode != 1 {
+		res.Code = 1
+		res.Message = "验证码无效"
+		_, _ = ctx.JSON(res)
+		return
+	}
 
-	// TODO 生成token
+	// 检查密码
+	userOrm := &user.UserOrm{
+		Name:      req.Name,
+	}
+
+	ok, err := user.Get(userOrm)
+	if !ok {
+		res.Code = 1
+		res.Message = err.Error()
+		_, _ = ctx.JSON(res)
+		return
+	}
+
+	if req.Password != userOrm.Password {
+		res.Code = 1
+		res.Message = "密码错误"
+		_, _ = ctx.JSON(res)
+		return
+	}
+
+	// 生成token
 	id := ""
 	token, err := auth.GenerateToken(id)
 	if err != nil {
