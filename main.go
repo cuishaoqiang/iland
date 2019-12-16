@@ -7,6 +7,8 @@ import (
 	"github.com/kataras/iris/v12/context"
 	"iland/auth"
 	"iland/captcha"
+	"iland/common"
+	"iland/encoder"
 	"iland/log"
 	"iland/login"
 	"io/ioutil"
@@ -15,6 +17,11 @@ import (
 type ListenAddr struct {
 	IP string `json:"ip"`
 	Port string `json:"port"`
+}
+
+type RSAKeyRes struct {
+	common.Response
+	PublicKey string `json:"public_key"`
 }
 
 func main() {
@@ -26,6 +33,8 @@ func main() {
 	customLogger, close2 := log.NewRequestLogger()
 	defer close2()
 	app.Use(customLogger)
+
+	defer login.CloseBoltDB()
 
 	// TODO vue.js template 解析是否正常
 	view := iris.HTML("web", ".html").Delims("{<", ">}")
@@ -41,11 +50,17 @@ func main() {
 		lCaptcha.Post("/", captcha.Check)
 	}
 
+	app.Get("/private", func(ctx iris.Context) {
+		res := RSAKeyRes{}
+		res.Code = 0
+		res.Message ="ok"
+		res.PublicKey = encoder.GetPublicKey()
+		_,_ = ctx.JSON(res)
+	})
+
 	app.Post("/login", login.Login)
 
-	app.Post("/logout", func(c context.Context) {
-
-	})
+	app.Post("/logout", login.Logout)
 
 	lUser := app.Party("/user", auth.CheckToken)
 	{

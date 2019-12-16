@@ -32,7 +32,7 @@ func init(){
 	if !ok {
 		err = ormEngine.Sync2(new(UserOrm))
 		if err != nil {
-			fmt.Println(("orm failed to initialized User table: %v", err)
+			fmt.Printf("orm failed to initialized User table: %v", err)
 		}
 
 		user := &UserOrm{

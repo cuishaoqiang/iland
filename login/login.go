@@ -4,6 +4,7 @@ import (
 	"github.com/kataras/iris/v12"
 	"iland/auth"
 	"iland/common"
+	"iland/encoder"
 	"iland/user"
 )
 
@@ -50,7 +51,14 @@ func Login(ctx iris.Context){
 		return
 	}
 
-	if req.Password != userOrm.Password {
+	plainPassword, errE := encoder.RSADecrypt([]byte(req.Password))
+	if errE != nil {
+		res.Code = 1
+		res.Message = "解密错误"
+		_, _ = ctx.JSON(res)
+	}
+
+	if string(plainPassword) != userOrm.Password {
 		res.Code = 1
 		res.Message = "密码错误"
 		_, _ = ctx.JSON(res)
